@@ -122,8 +122,12 @@ class SyntheticDatasetBuilder:
 
         n = num_cases or self.config.eval_dataset_size
 
-        # Configure DSPy to use the judge model for generation
-        lm = dspy.LM(self.config.judge_model)
+        # Configure DSPy to use eval_model (same model LLMJudge / RelevanceFilter
+        # use — guaranteed to be in 9router's catalog when user passes
+        # --eval-model minimax/MiniMax-M2.5). Previously used self.config.judge_model
+        # which defaults to "openai/gpt-4.1" — that model is NOT in 9router's
+        # catalog and caused NotFoundError. Verified 22.06.2026.
+        lm = dspy.LM(self.config.eval_model)
 
         with dspy.context(lm=lm):
             result = self.generator(

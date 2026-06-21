@@ -19,6 +19,20 @@ datasets/**/*.json
 snapshots/
 *.pkl
 
+# Local-only output (where evolved SKILL.md variants are written)
+# gitignored because they are ephemeral experiment results, not source code
+output/
+
+# Local-only skill_optimize.sh wrapper (untracked, see scripts/README)
+scripts/skill_optimize.sh
+scripts/__pycache__/
+
+# Local project metadata (Hermes-internal, not part of upstream project)
+.hermes/
+
+# Failed variants saved by evolve_skill.py (manual inspection only)
+*_FAILED.md
+
 # IDE
 .idea/
 .vscode/

@@ -34,6 +34,7 @@ from rich.console import Console
 from rich.progress import Progress
 
 from evolution.core.dataset_builder import EvalExample, EvalDataset
+from evolution.core.hermes_state_db import HermesStateDbImporter
 
 console = Console()
 
@@ -632,7 +633,11 @@ def build_dataset_from_external(
     importers = {
         "claude-code": ("Claude Code", ClaudeCodeImporter),
         "copilot": ("Copilot", CopilotImporter),
-        "hermes": ("Hermes Agent", HermesSessionImporter),
+        "hermes": ("Hermes Agent (sessions/*.json)", HermesSessionImporter),
+        "hermes-state-db": (
+            "Hermes State DB (state.db + .usage.json)",
+            HermesStateDbImporter,
+        ),
     }
 
     for source in sources:

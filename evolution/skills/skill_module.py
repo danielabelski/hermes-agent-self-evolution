@@ -97,20 +97,50 @@ class SkillModule(dspy.Module):
         You are an AI agent following specific skill instructions to complete a task.
         Read the skill instructions carefully and follow the procedure described.
         """
-        skill_instructions: str = dspy.InputField(desc="The skill instructions to follow")
         task_input: str = dspy.InputField(desc="The task to complete")
         output: str = dspy.OutputField(desc="Your response following the skill instructions")
 
     def __init__(self, skill_text: str):
         super().__init__()
         self.skill_text = skill_text
+        # Build the signature dynamically with the skill text embedded in the
+        # docstring. GEPA can then optimize the docstring (which IS the skill
+        # text), and updated_module.skill_text returns the new version.
+        # Without this trick, GEPA can't actually mutate the skill text —
+        # it could only change demos/instructions meta-level, leaving
+        # self.skill_text unchanged (bug fixed 22.06.2026).
+        self.TaskWithSkill.__doc__ = (
+            "Complete a task following these specific skill instructions:\n\n"
+            f"{skill_text}\n\n"
+            "Apply the procedure described above to complete the task."
+        )
         self.predictor = dspy.ChainOfThought(self.TaskWithSkill)
 
-    def forward(self, task_input: str) -> dspy.Prediction:
-        result = self.predictor(
-            skill_instructions=self.skill_text,
-            task_input=task_input,
+    @property
+    def skill_text(self) -> str:
+        """Return the current skill text (may be updated by GEPA via docstring)."""
+        doc = self.TaskWithSkill.__doc__ or ""
+        # Extract the text between the markers we set.
+        marker_start = "Complete a task following these specific skill instructions:\n\n"
+        marker_end = "\n\nApply the procedure described above to complete the task."
+        if marker_start in doc:
+            start = doc.index(marker_start) + len(marker_start)
+            end = doc.index(marker_end, start)
+            return doc[start:end]
+        return doc
+
+    @skill_text.setter
+    def skill_text(self, value: str) -> None:
+        """Set the skill text by updating the docstring."""
+        self.TaskWithSkill.__doc__ = (
+            "Complete a task following these specific skill instructions:\n\n"
+            f"{value}\n\n"
+            "Apply the procedure described above to complete the task."
         )
+
+    def forward(self, task_input: str) -> dspy.Prediction:
+        # No need to pass skill_instructions anymore — it's in the docstring.
+        result = self.predictor(task_input=task_input)
         return dspy.Prediction(output=result.output)
 
 
